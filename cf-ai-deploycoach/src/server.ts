@@ -101,6 +101,68 @@ If the user asks to schedule a task, use the schedule tool to schedule the task.
         // MCP tools from connected servers
         ...mcpTools,
 
+        // DeployCoach custom tool: analyzes raw logs for known error patterns
+  analyzeLog: tool({
+    description:
+      "Analyze a raw Kubernetes, Docker, or Jenkins log and identify known error patterns. Use this whenever the user pastes a log or error output.",
+    inputSchema: z.object({
+      log: z.string().describe("The raw log or error output to analyze")
+    }),
+    execute: async ({ log }) => {
+      const patterns = [
+        {
+          pattern: /CrashLoopBackOff/i,
+          type: "CrashLoopBackOff",
+          hint: "Container is crashing repeatedly. Check logs with: kubectl logs <pod> --previous"
+        },
+        {
+          pattern: /OOMKilled/i,
+          type: "OOMKilled",
+          hint: "Container exceeded memory limit. Increase memory in your deployment spec."
+        },
+        {
+          pattern: /ImagePullBackOff|ErrImagePull/i,
+          type: "ImagePullBackOff",
+          hint: "Cannot pull container image. Check image name, tag, and registry credentials."
+        },
+        {
+          pattern: /permission denied/i,
+          type: "PermissionError",
+          hint: "File or socket permission issue. Check securityContext and volume ownership."
+        },
+        {
+          pattern: /connection refused/i,
+          type: "ConnectionRefused",
+          hint: "Service not reachable. Check if the target pod is running and the port is correct."
+        },
+        {
+          pattern: /secret.*not found|configmap.*not found/i,
+          type: "MissingSecretOrConfigMap",
+          hint: "Referenced secret or configmap does not exist in the namespace."
+        },
+        {
+          pattern: /Build.*FAILURE|BUILD FAILURE/i,
+          type: "JenkinsBuildFailure",
+          hint: "Jenkins build failed. Check the build logs above this line for the root cause."
+        }
+      ];
+
+      const matches = patterns.filter(p => p.pattern.test(log));
+
+      if (matches.length === 0) {
+        return {
+          detected: false,
+          message: "No known error pattern detected. Sharing the full log will help diagnose further."
+        };
+      }
+
+      return {
+        detected: true,
+        errors: matches.map(m => ({ type: m.type, hint: m.hint }))
+      };
+    }
+  }),
+
         // Server-side tool: runs automatically on the server
         getWeather: tool({
           description: "Get the current weather for a city",

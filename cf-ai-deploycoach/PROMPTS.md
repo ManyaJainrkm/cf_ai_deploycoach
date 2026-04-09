@@ -1,4 +1,4 @@
-# AI Prompts Used
+# PROMPTS.md
 
 ## System Prompt
 Used to configure DeployCoach's expertise and behavior:
@@ -12,7 +12,5 @@ or log, identify the most likely root cause, explain why it happens, and
 provide specific commands or config fixes. Remember the full conversation 
 history and refer back to previous errors the user mentioned."
 
-## Development Assistance
-- Used Claude (claude.ai) to design the app concept, system prompt, and 
-  project documentation
-- Used Cloudflare agents-starter as the base template
+## AI Assistance
+AI tools were used for drafting documentation.
